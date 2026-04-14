@@ -1,19 +1,19 @@
 # Market Intelligence RAG
 
-A source-grounded RAG system over SEC earnings materials for analyzing how major public companies discuss strategy, risk, and investment over time.
+A source-grounded RAG system over SEC earnings materials for analyzing how major public companies discuss strategy, risk, and investment across quarters.
 
 ## Why This Project Exists
 
-Most RAG demos are generic chat wrappers over arbitrary text. This project is intentionally narrower.
+Many RAG projects optimize for a generic chat experience over arbitrary text. This project is intentionally narrower.
 
-The goal is to show practical AI data engineering judgment through a small but credible retrieval system that:
+The goal is to build a small but credible retrieval system over public market data that:
 
-- ingests reproducible public market data
+- ingests reproducible SEC materials
 - preserves metadata needed for filtering and traceability
 - retrieves context for strategic questions
 - supports citation-ready outputs instead of vague summaries
 
-This is designed as an interview and portfolio project, not a flashy product demo.
+The scope is intentionally focused to highlight practical AI data engineering judgment: source selection, metadata design, ingestion quality, and grounded retrieval.
 
 ## What The System Does
 
@@ -22,11 +22,11 @@ This is designed as an interview and portfolio project, not a flashy product dem
 - normalizes filing text and preserves citation metadata
 - chunks documents into retrieval-ready records
 - supports semantic retrieval with metadata filters
-- prepares the pipeline for grounded answer generation with citations
+- supports a retrieval-first pipeline with a clear path to grounded answer generation
 
-## MVP Scope
+## Current Scope
 
-Current MVP direction:
+Current scope:
 
 - source base: SEC materials first
 - starting companies: Microsoft, NVIDIA, Amazon
@@ -90,7 +90,7 @@ The benchmark question set for repeatable retrieval checks lives in `data/benchm
 
 ## Current Status
 
-Implemented now:
+Implemented:
 
 - SEC seed config and benchmark scaffolding
 - live SEC manifest generation for the initial company set
@@ -100,14 +100,14 @@ Implemented now:
 - Qdrant indexing and semantic search commands
 - tests for normalization, section extraction, and chunk overlap
 
-Working locally in this repo:
+Validated so far:
 
 - manifest generation against live SEC submissions data
 - raw SEC download
 - processed section extraction
 - chunk generation
 
-Still ahead:
+Planned next:
 
 - full end-to-end retrieval validation with Qdrant and embeddings in this repo
 - grounded answer generation with citations
@@ -182,7 +182,7 @@ market-rag search-qdrant --query "How is Microsoft describing AI demand?"
 - the current system is retrieval-first; grounded answer generation is not complete yet
 - the initial corpus is intentionally narrow so the project stays explainable and easy to inspect
 
-## Why This Is A Good RAG Use Case
+## What This Demonstrates
 
 This project demonstrates the parts of RAG work that matter in real systems:
 
