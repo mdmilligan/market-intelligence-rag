@@ -88,9 +88,7 @@ This metadata-first design is a core part of the project. The point is not only 
 
 The benchmark question set for repeatable retrieval checks lives in `data/benchmarks/sec_retrieval_questions.json`.
 
-## Current Status
-
-Implemented:
+## Current Capabilities
 
 - SEC seed config and benchmark scaffolding
 - live SEC manifest generation for the initial company set
@@ -100,34 +98,30 @@ Implemented:
 - Qdrant indexing and semantic search commands
 - tests for normalization, section extraction, and chunk overlap
 
-Validated so far:
-
-- manifest generation against live SEC submissions data
-- raw SEC download
-- processed section extraction
-- chunk generation
-
-Planned next:
-
-- full end-to-end retrieval validation with Qdrant and embeddings in this repo
-- grounded answer generation with citations
-- FastAPI wrapper
-- additional IR-source expansion
+Execution status and next steps are tracked in GitHub Issues and the GitHub Project.
 
 ## Repository Layout
 
 - `src/market_intelligence_rag/`: CLI, SEC ingestion, processing, chunking, and retrieval code
 - `data/manifests/`: seed config and generated SEC filing manifest
 - `data/benchmarks/`: benchmark questions for retrieval evaluation
-- `docs/project_plan.md`: project scope, decisions, and phased build plan
+- `docs/project_plan.md`: architecture and design reference
 - `tests/`: focused tests for text processing and chunking behavior
 
 ## Local Setup
 
-Install the project:
+Create and activate a virtual environment:
 
 ```bash
-python3 -m pip install --user .
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Install the project and development dependencies:
+
+```bash
+pip install -r requirements.txt
+pip install -e .
 ```
 
 Set a SEC user agent before hitting the SEC endpoints:

@@ -1,118 +1,189 @@
-# Magnificent 7 RAG Project Plan
+# Market Intelligence RAG Architecture
 
-## Goal
+## Purpose
 
-Build a public, interview-ready RAG project over the Magnificent 7 that demonstrates AI data engineering skills relevant to enterprise decision-support products.
+This document captures the durable design decisions for the repository: problem framing, system architecture, source strategy, metadata model, and key trade-offs.
 
-## Employer Signal
+Execution status and task tracking live in the GitHub Project and GitHub Issues, not in this file.
 
-This project should clearly demonstrate:
+## System Goal
 
-- AI-ready data ingestion and preprocessing
-- Chunking and embedding workflows
-- Vector database usage for semantic retrieval
-- Metadata-first design for filtering and traceability
-- Source-grounded answers with citations
-- Practical trade-off thinking around quality, freshness, and cost
+Build a small, credible RAG system over public market intelligence materials that demonstrates practical AI data engineering judgment.
 
-## Scope
+The system is designed to answer strategic questions about how major public companies discuss:
+
+- growth drivers
+- risk
+- capital investment
+- operating constraints
+- AI-related themes across quarters
+
+## Scope Boundaries
 
 ### In Scope
 
-- Magnificent 7 company public materials
-- Semantic retrieval over unstructured documents
-- Metadata filtering by company, filing period, and document type
-- Source-grounded answers with citations
-- CLI-first interface, with a later path to FastAPI
-- Cheap, persistent deployment path on Oracle VM
+- Magnificent 7 public company materials
+- SEC-first corpus for the initial implementation
+- semantic retrieval over unstructured filings
+- metadata filtering by company, filing period, form type, and section
+- citation-ready retrieval outputs
+- CLI-first workflow, with a later path to FastAPI
 
-### Out of Scope
+### Out Of Scope
 
-- Fancy frontend UI
-- Large-scale production auth
-- Multi-agent orchestration
-- Huge corpus ingestion on day one
-- Fine-tuned models
+- fancy frontend UI
+- large-scale production auth
+- multi-agent orchestration
+- broad corpus ingestion on day one
+- fine-tuned models
 
-## Constraints
+## High-Level Flow
 
-- Keep cost as low as possible
-- Use recognizable industry tools
-- Prefer components that can run on Oracle VM
-- Keep the project GitHub-friendly and easy to explain
-- Favor clarity over excessive complexity
+Core architecture:
 
-## Success Criteria
+`ingest -> clean/normalize -> extract sections -> chunk -> embed -> store vectors + metadata -> retrieve -> filter -> cite`
 
-The project is successful if it:
+Current repo flow:
 
-- Ingests a small but useful public corpus for the Magnificent 7
-- Chunks and embeds documents reliably
-- Stores vectors and metadata in a vector database
-- Answers strategic questions with relevant retrieved context
-- Returns source citations that are easy to inspect
-- Can be explained clearly in an interview in under 3 minutes
-- Looks polished and credible on GitHub
+`build manifest -> download SEC documents -> normalize -> extract targeted sections -> chunk -> index -> search`
 
-## Target User Questions
+## Source Strategy
 
-- How has Microsoft discussed AI monetization over the last 4 quarters?
-- What strategic risks has Tesla emphasized recently?
-- Which Magnificent 7 companies are talking most about infrastructure investment?
-- How have Nvidia and Amazon described capacity constraints differently?
-- Which companies are framing AI as efficiency versus revenue growth?
-
-## Architecture Direction
-
-Core flow:
-
-`ingest -> chunk -> embed -> store -> retrieve -> filter/rerank -> prompt -> generate`
-
-Expanded flow:
-
-`ingest -> clean/normalize -> chunk -> embed -> store vectors + metadata -> retrieve -> filter/rerank -> assemble context -> prompt -> generate -> log/evaluate`
-
-## Proposed Stack
-
-- **Language:** Python
-- **Vector DB:** Qdrant
-- **Embeddings:** OpenAI `text-embedding-3-small`
-- **Generation:** Small OpenAI chat model, or retrieval-only in earliest MVP
-- **Interface:** CLI first, then FastAPI as a thin wrapper over the same core services
-- **Hosting:** Oracle Linux VM
-- **Repository:** GitHub
-
-## Data Plan
-
-### Phase 1 Data Sources
+### Initial Corpus
 
 Start with the most reproducible public sources:
 
 - SEC `8-K` earnings release materials and attached exhibits
-- Selected `10-Q` sections for quarterly context, starting with `mda` and `risk_factors`
-- `10-K` sections only when annual context is needed
+- selected `10-Q` sections for quarterly context
+- `10-K` sections only when annual context is needed later
 
-Later expansion sources:
+### Initial Company Set
 
-- Investor relations press releases
-- Shareholder letters
-- Other IR website materials where they materially improve coverage
+- Microsoft
+- NVIDIA
+- Amazon
 
-### MVP Source Strategy
+### Initial Section Strategy
 
-Start narrow:
+The first targeted `10-Q` sections are:
 
-- 3 companies first: Microsoft, Nvidia, Amazon
-- SEC-first corpus: `8-K` earnings release materials plus selected `10-Q` sections
-- Prefer `8-K` filings tied to earnings-release disclosure, not arbitrary `8-K` coverage
-- 1 to 2 recent quarters to start
-- CLI-first workflow for ingestion, indexing, and retrieval
+- `mda`
+- `risk_factors`
 
-Then expand to all 7 companies.
+This keeps the initial extraction path narrow while still covering strategy, operating performance, and disclosed risk.
 
-## Metadata Plan
+### Expansion Path
 
-Each chunk should include:
+After the SEC-first base corpus is stable, the likely next sources are:
+
+- investor relations press releases
+- shareholder letters
+- other IR website materials that materially improve coverage
+
+## Design Principles
+
+- Favor clarity, credibility, and completeness over complexity
+- Use public, reproducible sources first
+- Treat metadata as a first-class part of the retrieval design
+- Keep the MVP small enough to explain quickly in an interview
+- Prefer a strong retrieval pipeline before adding answer generation
+
+## Component Architecture
+
+### Manifest Layer
+
+The manifest layer defines which filings are in scope before ingestion starts.
+
+Responsibilities:
+
+- select companies and form types
+- pull recent filing metadata from SEC submissions data
+- constrain `8-K` selection toward earnings-related disclosures
+- persist a manifest of filing URLs and expected metadata
+
+Primary files:
+
+- `data/manifests/sec_mvp_seeds.json`
+- `data/manifests/sec_mvp_manifest.jsonl`
+- `src/market_intelligence_rag/manifest.py`
+- `src/market_intelligence_rag/sec.py`
+
+### Ingestion Layer
+
+The ingestion layer downloads raw SEC source documents and stores them locally for repeatable runs.
+
+Responsibilities:
+
+- download raw filing documents
+- preserve accession-linked source files
+- separate raw inputs from processed outputs
+
+Primary files:
+
+- `src/market_intelligence_rag/sec.py`
+- `src/market_intelligence_rag/storage.py`
+
+### Normalization And Section Extraction
+
+The normalization layer converts SEC HTML into plain text and extracts targeted filing sections.
+
+Responsibilities:
+
+- strip markup and normalize whitespace
+- identify targeted `10-Q` section boundaries
+- record processing notes when extraction is weak or missing
+
+Primary files:
+
+- `src/market_intelligence_rag/text_processing.py`
+
+### Chunking Layer
+
+The chunking layer converts processed sections into retrieval-ready text segments.
+
+Responsibilities:
+
+- create overlapping chunks
+- preserve source metadata on every chunk
+- generate stable chunk identifiers
+
+Primary files:
+
+- `src/market_intelligence_rag/chunking.py`
+
+### Embedding And Vector Storage
+
+The embedding and vector storage layer prepares chunk records for semantic retrieval.
+
+Responsibilities:
+
+- generate embeddings with OpenAI
+- store vectors and metadata in Qdrant
+- expose filtered semantic search
+
+Primary files:
+
+- `src/market_intelligence_rag/embeddings.py`
+- `src/market_intelligence_rag/qdrant_store.py`
+
+### Interface Layer
+
+The initial interface is a CLI. This keeps the early implementation focused on pipeline quality instead of transport concerns.
+
+Responsibilities:
+
+- orchestrate manifest generation, ingestion, processing, chunking, indexing, and search
+- remain thin enough that the same core services can later be wrapped by FastAPI
+
+Primary files:
+
+- `src/market_intelligence_rag/cli.py`
+
+## Metadata Model
+
+Each chunk is designed to carry the fields needed for retrieval, filtering, and citation quality.
+
+Current required metadata:
 
 - `company`
 - `ticker`
@@ -125,7 +196,7 @@ Each chunk should include:
 - `section_name`
 - `chunk_id`
 
-Optional later:
+Possible later metadata:
 
 - `document_type`
 - `period_end`
@@ -133,151 +204,103 @@ Optional later:
 - `theme`
 - `sentiment_label`
 
-## Risks and Unknowns
+## Storage Layout
 
-- SEC filing extraction may still require company-specific handling for some exhibits or section layouts
-- Selected `10-Q` sections may still contain noise if extraction boundaries are not chosen carefully
-- Chunking strategy may affect retrieval quality more than expected
-- Retrieval-first MVP may be enough initially, but generated summaries may be needed for stronger demos
-- OpenAI API usage should stay small, but costs still need monitoring
-- Hosting on Oracle VM is cheap, but deployment should not overcomplicate the first iteration
+The repository separates data by pipeline stage:
 
-## Build Phases
+- `data/raw/`: raw SEC documents
+- `data/processed/`: normalized documents and extracted sections
+- `data/chunks/`: chunk records ready for indexing
+- `data/manifests/`: manifest seeds and generated manifest files
+- `data/benchmarks/`: benchmark retrieval questions
 
-### Phase 1: Dataset Definition
+This layout keeps the ingestion pipeline inspectable and makes reruns easier to reason about.
 
-- Confirm exact SEC sources for initial 3 companies
-- Define which `10-Q` sections are in scope for v1
-- Create document manifest
-- Define metadata schema
-- Save sample raw documents
+## Retrieval Design
 
-### Phase 2: Ingestion Pipeline
+The retrieval layer is built around semantic search plus metadata filtering.
 
-- Add CLI ingestion entry point
-- Load SEC documents and exhibits
-- Normalize text
-- Extract metadata
-- Store raw and processed forms
+Initial filter dimensions:
 
-### Phase 3: Embeddings and Vector Storage
+- company
+- form type
+- section name
+- year
 
-- Implement chunking
-- Generate embeddings
-- Load vectors into Qdrant
-- Verify retrieval manually
+This supports questions such as:
 
-### Phase 4: Retrieval Workflow
+- how one company discussed AI strategy in recent quarters
+- how two companies framed investment differently
+- what risk factors changed over time
 
-- Embed user query
-- Retrieve top-k chunks
-- Apply metadata filters for company, form type, section, and time period
-- Return ranked results with citations
+The design is intentionally metadata-first so results remain explainable and citation-ready.
 
-### Phase 5: Generation Layer
+## Interface Strategy
 
-- Build grounded prompt from retrieved context
-- Generate concise answer
-- Return citations alongside answer
-- Keep the generation flow callable from the CLI before adding FastAPI
+The project is CLI-first by design.
 
-### Phase 6: Finalization
+Why:
 
-- Write README
-- Add architecture diagram
-- Add sample queries and outputs
-- Document trade-offs, limitations, and future improvements
+- validates the pipeline before adding API surface area
+- keeps the first implementation easy to inspect
+- reduces early complexity
+- makes a later FastAPI wrapper straightforward if core services remain transport-agnostic
 
-## GitHub Execution Structure
+Longer term, FastAPI can sit on top of the same ingestion, retrieval, and generation services.
 
-Use a lightweight GitHub workflow to track delivery without adding unnecessary process.
+## Key Decisions And Trade-Offs
 
-### Repository Setup
+### SEC-First Instead Of Transcript-First
 
-- 1 dedicated GitHub repository for the project
-- 1 planning document in this repo for internal design and scope decisions
-- 1 GitHub Project board for execution tracking
+Chosen because SEC materials are:
 
-### Project Board Columns
+- official
+- reproducible
+- easy to explain
+- strong for citation quality
 
-- `Todo`
-- `Ready`
-- `In Progress`
-- `Blocked`
-- `Done`
+Trade-off:
 
-### Milestones
+- less rich in spoken management commentary than earnings call transcripts
 
-- `M1 - Dataset and Scope`
-- `M2 - Ingestion Pipeline`
-- `M3 - Embeddings and Vector Store`
-- `M4 - Retrieval MVP`
-- `M5 - Grounded Generation`
-- `M6 - Finalization`
+### Targeted `10-Q` Sections Instead Of Full Filings
 
-### Labels
+Chosen because full filings are noisy and dilute retrieval quality.
 
-- `phase-1`
-- `phase-2`
-- `phase-3`
-- `phase-4`
-- `phase-5`
-- `phase-6`
-- `docs`
-- `bug`
-- `nice-to-have`
+Trade-off:
 
-### Initial Issue Strategy
+- section extraction can require filing-specific handling
 
-Start with roughly 10 to 15 issues total. Keep issues concrete and outcome-oriented.
+### CLI First Instead Of FastAPI First
 
-Suggested issue areas:
+Chosen because it keeps the initial implementation focused on ingestion, metadata, chunking, and retrieval.
 
-- define SEC-first MVP corpus and company set
-- define metadata schema for SEC chunks and citations
-- create benchmark questions for SEC retrieval quality
-- build SEC document manifest and CLI ingestion skeleton
-- normalize and store selected SEC filing sections
-- implement chunking and embedding generation for the SEC corpus
-- stand up Qdrant and load initial SEC vectors
-- implement retrieval with metadata filters for the SEC corpus
-- add grounded answer generation with SEC citations
-- rewrite README and architecture docs
+Trade-off:
 
-### Process Principles
+- less product-like presentation in the earliest version
 
-- Keep the board simple and readable
-- Avoid excessive labels, subtasks, or PM ceremony
-- Use milestones to group work instead of creating complex hierarchies
-- Add new issues only when they are specific and actionable
-- Prioritize visible progress over perfect project management
+### Retrieval First Before Generation
 
-## Decision Log
+Chosen because retrieval quality and metadata fidelity are more important than early answer synthesis.
 
-- Chose Magnificent 7 because it is recognizable, public, and aligns with strategic intelligence use cases
-- Chose public company materials over private repo data for easier sharing and portfolio value
-- Chose SEC materials as the MVP source base because they are official, reproducible, and easy to explain
-- Chose `8-K` earnings release materials plus selected `10-Q` sections over full filings to balance signal and implementation cost
-- Chose Qdrant over a managed vector DB to keep cost low while still using a recognized tool
-- Chose OpenAI embeddings for recognizability and simplicity
-- Chose CLI first so the pipeline can be validated before adding an API layer
-- Chose Oracle VM for cheap persistent hosting
-- Chose a lightweight GitHub issues and project-board workflow to track execution without overengineering project management
+Trade-off:
 
-## Open Questions
+- the system is not yet a full answering experience
 
-- Which `10-Q` sections should be included after the initial `mda` and `risk_factors` set?
-- Should the first release remain retrieval-first, then add generation after quality is verified?
-- Should deployment happen only after local MVP is complete?
-- When should IR website materials be added after the SEC-first base corpus is working?
+## Risks And Limitations
 
-## Future Improvements
+- SEC filing extraction may still require company-specific handling for some layouts or exhibits
+- selected `10-Q` section boundaries may need refinement as coverage expands
+- chunking strategy may need iteration to improve retrieval quality
+- retrieval quality should be validated carefully before adding grounded answer generation
+- the initial corpus is intentionally narrow and does not yet cover all Magnificent 7 companies or all public source types
 
-- Add IR website materials such as shareholder letters and press releases
-- Hybrid search using keyword + vector retrieval
-- Reranking layer for better relevance
-- Temporal comparisons across quarters
-- Incremental re-indexing when new documents appear
-- Docker packaging
-- Cloud Run or alternate deployment option
-- Lightweight web UI
+## Future Directions
+
+- add more companies from the Magnificent 7
+- add additional `10-Q` or `10-K` sections where they improve retrieval value
+- incorporate IR materials such as shareholder letters and press releases
+- validate full Qdrant indexing and filtered retrieval workflow end-to-end
+- add grounded answer generation with citations
+- add hybrid search or reranking if retrieval quality warrants it
+- expose the same core services through FastAPI

@@ -14,9 +14,6 @@ setup(
         "qdrant-client>=1.9,<2",
         "requests>=2.31,<3",
     ],
-    extras_require={
-        "dev": ["pytest>=8,<9"],
-    },
     entry_points={
         "console_scripts": [
             "market-rag=market_intelligence_rag.cli:main",
