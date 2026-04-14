@@ -1,88 +1,196 @@
 # Market Intelligence RAG
 
-CLI-first SEC market intelligence RAG project focused on a small, credible retrieval pipeline over Magnificent 7 public company materials.
+A source-grounded RAG system over SEC earnings materials for analyzing how major public companies discuss strategy, risk, and investment over time.
 
-## Current MVP Direction
+## Why This Project Exists
 
-- SEC-first corpus
-- 3 starting companies: Microsoft, NVIDIA, Amazon
-- `8-K` earnings-release materials plus selected `10-Q` sections
+Most RAG demos are generic chat wrappers over arbitrary text. This project is intentionally narrower.
+
+The goal is to show practical AI data engineering judgment through a small but credible retrieval system that:
+
+- ingests reproducible public market data
+- preserves metadata needed for filtering and traceability
+- retrieves context for strategic questions
+- supports citation-ready outputs instead of vague summaries
+
+This is designed as an interview and portfolio project, not a flashy product demo.
+
+## What The System Does
+
+- builds a small SEC-first corpus for Magnificent 7 companies
+- extracts targeted quarterly earnings material from `8-K` and `10-Q` filings
+- normalizes filing text and preserves citation metadata
+- chunks documents into retrieval-ready records
+- supports semantic retrieval with metadata filters
+- prepares the pipeline for grounded answer generation with citations
+
+## MVP Scope
+
+Current MVP direction:
+
+- source base: SEC materials first
+- starting companies: Microsoft, NVIDIA, Amazon
+- filing types: earnings-related `8-K` materials plus selected `10-Q` sections
 - selected `10-Q` sections: `mda` and `risk_factors`
-- metadata-first chunking and citation design
-- CLI first, with a later path to FastAPI
+- interface: CLI first, with a later path to FastAPI
 
-## What Exists Now
+Why this scope:
 
-- SEC seed config in `data/manifests/sec_mvp_seeds.json`
-- benchmark question set in `data/benchmarks/sec_retrieval_questions.json`
-- CLI commands to:
-  - build a live SEC manifest
-  - download raw SEC documents
-  - normalize filings and extract targeted sections
-  - chunk processed text into citation-ready records
-  - index and search chunks with OpenAI embeddings and Qdrant
+- SEC filings are official, reproducible, and easy to explain
+- targeted `10-Q` extraction gives better signal than full-filing ingestion
+- CLI keeps the first version focused on ingestion, metadata, retrieval, and citations
+
+## Architecture
+
+Core flow:
+
+`ingest -> clean/normalize -> extract sections -> chunk -> embed -> store vectors + metadata -> retrieve -> filter -> cite`
+
+Current implementation is centered around a manifest-driven SEC workflow:
+
+1. build a filing manifest from SEC submissions data
+2. download raw SEC documents
+3. normalize filing text and extract targeted sections
+4. chunk processed text into citation-ready records
+5. optionally embed and index chunks into Qdrant
+6. query with metadata filters such as company, form type, section, and year
+
+## Data And Metadata Design
+
+Each chunk is designed to carry the metadata needed for retrieval and citation quality.
+
+Current chunk metadata includes:
+
+- `company`
+- `ticker`
+- `form_type`
+- `filing_date`
+- `quarter`
+- `year`
+- `accession_number`
+- `source_url`
+- `section_name`
+- `chunk_id`
+
+This metadata-first design is a core part of the project. The point is not only to retrieve similar text, but to preserve enough structure to support:
+
+- citation
+- filtering
+- explainability
+- future governance-style controls
+
+## Example Questions
+
+- How has Microsoft discussed AI monetization in recent quarterly materials?
+- What risks has Amazon highlighted around fulfillment capacity and operating costs?
+- How do Microsoft and NVIDIA describe infrastructure investment differently?
+- Which quarterly earnings materials mention efficiency gains versus revenue growth from AI?
+
+The benchmark question set for repeatable retrieval checks lives in `data/benchmarks/sec_retrieval_questions.json`.
+
+## Current Status
+
+Implemented now:
+
+- SEC seed config and benchmark scaffolding
+- live SEC manifest generation for the initial company set
+- raw document download from SEC
+- filing normalization and targeted `10-Q` section extraction
+- chunk generation for retrieval
+- Qdrant indexing and semantic search commands
 - tests for normalization, section extraction, and chunk overlap
+
+Working locally in this repo:
+
+- manifest generation against live SEC submissions data
+- raw SEC download
+- processed section extraction
+- chunk generation
+
+Still ahead:
+
+- full end-to-end retrieval validation with Qdrant and embeddings in this repo
+- grounded answer generation with citations
+- FastAPI wrapper
+- additional IR-source expansion
 
 ## Repository Layout
 
-- `src/market_intelligence_rag/`: core CLI, SEC ingestion, normalization, chunking, and retrieval code
-- `data/manifests/`: versioned manifest seed config and generated SEC manifest
-- `data/benchmarks/`: repeatable retrieval questions
-- `docs/project_plan.md`: project scope, decisions, and phased plan
+- `src/market_intelligence_rag/`: CLI, SEC ingestion, processing, chunking, and retrieval code
+- `data/manifests/`: seed config and generated SEC filing manifest
+- `data/benchmarks/`: benchmark questions for retrieval evaluation
+- `docs/project_plan.md`: project scope, decisions, and phased build plan
+- `tests/`: focused tests for text processing and chunking behavior
 
-## Local Workflow
+## Local Setup
 
-Set a SEC user agent first:
+Install the project:
+
+```bash
+python3 -m pip install --user .
+```
+
+Set a SEC user agent before hitting the SEC endpoints:
 
 ```bash
 export SEC_USER_AGENT="market-intelligence-rag your-email@example.com"
 ```
 
-Build the manifest:
+Optional environment variables:
+
+- `OPENAI_API_KEY`: required for embedding and semantic search
+- `QDRANT_URL`: defaults to `http://localhost:6333`
+- `QDRANT_COLLECTION`: defaults to `market_intelligence_sec_chunks`
+
+## Running The Pipeline
+
+Build the filing manifest:
 
 ```bash
-PYTHONPATH=src python3 -m market_intelligence_rag.cli build-manifest
+market-rag build-manifest
 ```
 
 Download raw SEC documents:
 
 ```bash
-PYTHONPATH=src python3 -m market_intelligence_rag.cli ingest-sec
+market-rag ingest-sec
 ```
 
-Normalize and extract sections:
+Normalize filings and extract targeted sections:
 
 ```bash
-PYTHONPATH=src python3 -m market_intelligence_rag.cli process-sec
+market-rag process-sec
 ```
 
 Chunk processed documents:
 
 ```bash
-PYTHONPATH=src python3 -m market_intelligence_rag.cli chunk-sec
+market-rag chunk-sec
 ```
 
-Optional retrieval commands after setting `OPENAI_API_KEY` and running Qdrant:
+Optional indexing and retrieval flow after configuring Qdrant and `OPENAI_API_KEY`:
 
 ```bash
-PYTHONPATH=src python3 -m market_intelligence_rag.cli index-qdrant
-PYTHONPATH=src python3 -m market_intelligence_rag.cli search-qdrant --query "How is Microsoft describing AI demand?"
+market-rag index-qdrant
+market-rag search-qdrant --query "How is Microsoft describing AI demand?"
 ```
 
-## Environment
+## Tradeoffs And Limitations
 
-- `SEC_USER_AGENT`: required for polite SEC access
-- `OPENAI_API_KEY`: required for embedding and semantic search
-- `QDRANT_URL`: optional, defaults to `http://localhost:6333`
-- `QDRANT_COLLECTION`: optional, defaults to `market_intelligence_sec_chunks`
+- SEC-first sourcing is more reproducible than transcript-first sourcing, but less rich in spoken management commentary
+- targeted section extraction improves signal, but some filings still require company-specific handling
+- the current system is retrieval-first; grounded answer generation is not complete yet
+- the initial corpus is intentionally narrow so the project stays explainable and easy to inspect
 
-## Current Status
+## Why This Is A Good RAG Use Case
 
-- working SEC manifest generation against live SEC submissions data
-- working raw download, normalization, section extraction, and chunk generation
-- Qdrant indexing and semantic search commands are implemented, but still need full end-to-end validation in this repo
-- grounded answer generation and portfolio polish are still ahead
+This project demonstrates the parts of RAG work that matter in real systems:
 
-## Notes
+- source selection and reproducibility
+- metadata design
+- ingestion and normalization quality
+- retrieval quality over unstructured text
+- citation-ready outputs
+- honest scope control
 
-This repo is intentionally narrow. The goal is to demonstrate practical AI data engineering judgment, not a generic chatbot demo.
+The project is intentionally optimized for clarity, credibility, and maintainability over hype.
