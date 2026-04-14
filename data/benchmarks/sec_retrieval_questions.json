@@ -1,0 +1,80 @@
+[
+  {
+    "id": "q1",
+    "question": "How has Microsoft framed AI monetization in recent quarterly materials?",
+    "focus": "strategy",
+    "suggested_filters": {
+      "company": "Microsoft"
+    }
+  },
+  {
+    "id": "q2",
+    "question": "What risks has Amazon highlighted around fulfillment capacity and operating costs?",
+    "focus": "risk",
+    "suggested_filters": {
+      "company": "Amazon"
+    }
+  },
+  {
+    "id": "q3",
+    "question": "How do Microsoft and NVIDIA describe infrastructure investment differently?",
+    "focus": "comparison",
+    "suggested_filters": {}
+  },
+  {
+    "id": "q4",
+    "question": "Which companies describe demand strength for AI-related products most explicitly?",
+    "focus": "comparison",
+    "suggested_filters": {}
+  },
+  {
+    "id": "q5",
+    "question": "What does Microsoft say about cloud growth drivers in the latest quarter?",
+    "focus": "strategy",
+    "suggested_filters": {
+      "company": "Microsoft",
+      "form_type": "10-Q",
+      "section_name": "mda"
+    }
+  },
+  {
+    "id": "q6",
+    "question": "What recent risk factor updates did NVIDIA include in its quarterly filing?",
+    "focus": "risk",
+    "suggested_filters": {
+      "company": "NVIDIA",
+      "form_type": "10-Q",
+      "section_name": "risk_factors"
+    }
+  },
+  {
+    "id": "q7",
+    "question": "How are Amazon and Microsoft discussing capital expenditure or infrastructure expansion?",
+    "focus": "comparison",
+    "suggested_filters": {}
+  },
+  {
+    "id": "q8",
+    "question": "Which quarterly earnings materials mention efficiency gains versus revenue growth from AI?",
+    "focus": "comparison",
+    "suggested_filters": {}
+  },
+  {
+    "id": "q9",
+    "question": "What changed in Amazon's quarterly risk disclosures versus the prior quarter?",
+    "focus": "temporal",
+    "suggested_filters": {
+      "company": "Amazon",
+      "form_type": "10-Q",
+      "section_name": "risk_factors"
+    }
+  },
+  {
+    "id": "q10",
+    "question": "How did NVIDIA characterize demand and supply constraints in recent earnings materials?",
+    "focus": "strategy",
+    "suggested_filters": {
+      "company": "NVIDIA"
+    }
+  }
+]

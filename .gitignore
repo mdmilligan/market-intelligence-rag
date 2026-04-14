@@ -1,13 +1,16 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+*.egg-info/
 .venv/
 venv/
 .env
 .DS_Store
 data/raw/
 data/processed/
+data/chunks/
 *.log
 *.sqlite3
 .idea/
 .vscode/
+AGENTS.md

@@ -21,9 +21,9 @@ This project should clearly demonstrate:
 
 - Magnificent 7 company public materials
 - Semantic retrieval over unstructured documents
-- Metadata filtering by company, date, and document type
+- Metadata filtering by company, filing period, and document type
 - Source-grounded answers with citations
-- Lightweight API or CLI interface
+- CLI-first interface, with a later path to FastAPI
 - Cheap, persistent deployment path on Oracle VM
 
 ### Out of Scope
@@ -78,7 +78,7 @@ Expanded flow:
 - **Vector DB:** Qdrant
 - **Embeddings:** OpenAI `text-embedding-3-small`
 - **Generation:** Small OpenAI chat model, or retrieval-only in earliest MVP
-- **API:** FastAPI
+- **Interface:** CLI first, then FastAPI as a thin wrapper over the same core services
 - **Hosting:** Oracle Linux VM
 - **Repository:** GitHub
 
@@ -86,20 +86,27 @@ Expanded flow:
 
 ### Phase 1 Data Sources
 
-Start with the easiest, most reproducible public sources:
+Start with the most reproducible public sources:
 
-- Recent earnings call transcripts, where publicly accessible
+- SEC `8-K` earnings release materials and attached exhibits
+- Selected `10-Q` sections for quarterly context, starting with `mda` and `risk_factors`
+- `10-K` sections only when annual context is needed
+
+Later expansion sources:
+
 - Investor relations press releases
 - Shareholder letters
-- SEC filings if needed to stabilize source coverage
+- Other IR website materials where they materially improve coverage
 
 ### MVP Source Strategy
 
 Start narrow:
 
 - 3 companies first: Microsoft, Nvidia, Amazon
-- 1 document type first: earnings call transcripts or equivalent strategic text source
+- SEC-first corpus: `8-K` earnings release materials plus selected `10-Q` sections
+- Prefer `8-K` filings tied to earnings-release disclosure, not arbitrary `8-K` coverage
 - 1 to 2 recent quarters to start
+- CLI-first workflow for ingestion, indexing, and retrieval
 
 Then expand to all 7 companies.
 
@@ -109,25 +116,29 @@ Each chunk should include:
 
 - `company`
 - `ticker`
-- `document_type`
-- `date`
+- `form_type`
+- `filing_date`
 - `quarter`
 - `year`
+- `accession_number`
 - `source_url`
+- `section_name`
 - `chunk_id`
 
 Optional later:
 
-- `speaker`
-- `section`
+- `document_type`
+- `period_end`
+- `fiscal_period`
 - `theme`
 - `sentiment_label`
 
 ## Risks and Unknowns
 
-- Public transcript sourcing may be inconsistent across companies
+- SEC filing extraction may still require company-specific handling for some exhibits or section layouts
+- Selected `10-Q` sections may still contain noise if extraction boundaries are not chosen carefully
 - Chunking strategy may affect retrieval quality more than expected
-- Retrieval-only MVP may be enough initially, but generated summaries may be needed for stronger demos
+- Retrieval-first MVP may be enough initially, but generated summaries may be needed for stronger demos
 - OpenAI API usage should stay small, but costs still need monitoring
 - Hosting on Oracle VM is cheap, but deployment should not overcomplicate the first iteration
 
@@ -135,14 +146,16 @@ Optional later:
 
 ### Phase 1: Dataset Definition
 
-- Confirm exact sources for initial 3 companies
+- Confirm exact SEC sources for initial 3 companies
+- Define which `10-Q` sections are in scope for v1
 - Create document manifest
 - Define metadata schema
 - Save sample raw documents
 
 ### Phase 2: Ingestion Pipeline
 
-- Load documents
+- Add CLI ingestion entry point
+- Load SEC documents and exhibits
 - Normalize text
 - Extract metadata
 - Store raw and processed forms
@@ -158,7 +171,7 @@ Optional later:
 
 - Embed user query
 - Retrieve top-k chunks
-- Apply metadata filters
+- Apply metadata filters for company, form type, section, and time period
 - Return ranked results with citations
 
 ### Phase 5: Generation Layer
@@ -166,8 +179,9 @@ Optional later:
 - Build grounded prompt from retrieved context
 - Generate concise answer
 - Return citations alongside answer
+- Keep the generation flow callable from the CLI before adding FastAPI
 
-### Phase 6: Portfolio Polish
+### Phase 6: Finalization
 
 - Write README
 - Add architecture diagram
@@ -186,7 +200,7 @@ Use a lightweight GitHub workflow to track delivery without adding unnecessary p
 
 ### Project Board Columns
 
-- `Backlog`
+- `Todo`
 - `Ready`
 - `In Progress`
 - `Blocked`
@@ -199,7 +213,7 @@ Use a lightweight GitHub workflow to track delivery without adding unnecessary p
 - `M3 - Embeddings and Vector Store`
 - `M4 - Retrieval MVP`
 - `M5 - Grounded Generation`
-- `M6 - Portfolio Polish`
+- `M6 - Finalization`
 
 ### Labels
 
@@ -219,16 +233,16 @@ Start with roughly 10 to 15 issues total. Keep issues concrete and outcome-orien
 
 Suggested issue areas:
 
-- define initial source strategy and company set
-- define metadata schema
-- create benchmark questions
-- build document manifest and ingestion pipeline
-- normalize and store processed text
-- implement chunking and embedding generation
-- stand up Qdrant and load vectors
-- implement retrieval with metadata filters
-- add grounded answer generation with citations
-- write README and architecture docs
+- define SEC-first MVP corpus and company set
+- define metadata schema for SEC chunks and citations
+- create benchmark questions for SEC retrieval quality
+- build SEC document manifest and CLI ingestion skeleton
+- normalize and store selected SEC filing sections
+- implement chunking and embedding generation for the SEC corpus
+- stand up Qdrant and load initial SEC vectors
+- implement retrieval with metadata filters for the SEC corpus
+- add grounded answer generation with SEC citations
+- rewrite README and architecture docs
 
 ### Process Principles
 
@@ -242,20 +256,24 @@ Suggested issue areas:
 
 - Chose Magnificent 7 because it is recognizable, public, and aligns with strategic intelligence use cases
 - Chose public company materials over private repo data for easier sharing and portfolio value
+- Chose SEC materials as the MVP source base because they are official, reproducible, and easy to explain
+- Chose `8-K` earnings release materials plus selected `10-Q` sections over full filings to balance signal and implementation cost
 - Chose Qdrant over a managed vector DB to keep cost low while still using a recognized tool
 - Chose OpenAI embeddings for recognizability and simplicity
+- Chose CLI first so the pipeline can be validated before adding an API layer
 - Chose Oracle VM for cheap persistent hosting
 - Chose a lightweight GitHub issues and project-board workflow to track execution without overengineering project management
 
 ## Open Questions
 
-- Should the MVP start with transcripts only, or combine transcripts with SEC filings?
-- Should the first release be retrieval-only, then add generation later?
+- Which `10-Q` sections should be included after the initial `mda` and `risk_factors` set?
+- Should the first release remain retrieval-first, then add generation after quality is verified?
 - Should deployment happen only after local MVP is complete?
-- Is Qdrant the final choice, or should Pinecone be considered later for resume signaling?
+- When should IR website materials be added after the SEC-first base corpus is working?
 
 ## Future Improvements
 
+- Add IR website materials such as shareholder letters and press releases
 - Hybrid search using keyword + vector retrieval
 - Reranking layer for better relevance
 - Temporal comparisons across quarters

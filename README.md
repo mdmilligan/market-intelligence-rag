@@ -1,69 +1,88 @@
 # Market Intelligence RAG
 
-An interview-focused RAG project that turns public Magnificent 7 company materials into a small strategic intelligence copilot.
+CLI-first SEC market intelligence RAG project focused on a small, credible retrieval pipeline over Magnificent 7 public company materials.
 
-## What It Does
+## Current MVP Direction
 
-- ingests public company documents
-- chunks and embeds text for semantic retrieval
-- stores vectors and metadata in a vector database
-- retrieves relevant context for strategic questions
-- returns grounded answers with source citations
+- SEC-first corpus
+- 3 starting companies: Microsoft, NVIDIA, Amazon
+- `8-K` earnings-release materials plus selected `10-Q` sections
+- selected `10-Q` sections: `mda` and `risk_factors`
+- metadata-first chunking and citation design
+- CLI first, with a later path to FastAPI
 
-## Why This Exists
+## What Exists Now
 
-This project is designed to demonstrate practical AI data engineering skills:
+- SEC seed config in `data/manifests/sec_mvp_seeds.json`
+- benchmark question set in `data/benchmarks/sec_retrieval_questions.json`
+- CLI commands to:
+  - build a live SEC manifest
+  - download raw SEC documents
+  - normalize filings and extract targeted sections
+  - chunk processed text into citation-ready records
+  - index and search chunks with OpenAI embeddings and Qdrant
+- tests for normalization, section extraction, and chunk overlap
 
-- ingestion and preprocessing of unstructured data
-- chunking and embedding workflows
-- vector database usage
-- metadata-first retrieval design
-- source-grounded RAG patterns
-- trade-off thinking around quality, freshness, and cost
+## Repository Layout
 
-## Initial Scope
+- `src/market_intelligence_rag/`: core CLI, SEC ingestion, normalization, chunking, and retrieval code
+- `data/manifests/`: versioned manifest seed config and generated SEC manifest
+- `data/benchmarks/`: repeatable retrieval questions
+- `docs/project_plan.md`: project scope, decisions, and phased plan
 
-The first version focuses on the Magnificent 7:
+## Local Workflow
 
-- Apple
-- Microsoft
-- Nvidia
-- Amazon
-- Meta
-- Alphabet
-- Tesla
+Set a SEC user agent first:
 
-Initial data sources will prioritize public strategic materials such as earnings call transcripts, shareholder letters, investor relations releases, and SEC filings.
+```bash
+export SEC_USER_AGENT="market-intelligence-rag your-email@example.com"
+```
 
-## Example Questions
+Build the manifest:
 
-- How has Microsoft discussed AI monetization over the last 4 quarters?
-- What strategic risks has Tesla emphasized recently?
-- Which Magnificent 7 companies are talking most about infrastructure investment?
-- How have Nvidia and Amazon described capacity constraints differently?
+```bash
+PYTHONPATH=src python3 -m market_intelligence_rag.cli build-manifest
+```
 
-## Architecture
+Download raw SEC documents:
 
-Core flow:
+```bash
+PYTHONPATH=src python3 -m market_intelligence_rag.cli ingest-sec
+```
 
-`ingest -> chunk -> embed -> store -> retrieve -> filter/rerank -> prompt -> generate`
+Normalize and extract sections:
 
-## Planned Stack
+```bash
+PYTHONPATH=src python3 -m market_intelligence_rag.cli process-sec
+```
 
-- Python
-- Qdrant
-- OpenAI embeddings
-- FastAPI
-- Oracle Linux VM
+Chunk processed documents:
 
-## Project Status
+```bash
+PYTHONPATH=src python3 -m market_intelligence_rag.cli chunk-sec
+```
 
-Planning and repository setup.
+Optional retrieval commands after setting `OPENAI_API_KEY` and running Qdrant:
 
-## Planning Docs
+```bash
+PYTHONPATH=src python3 -m market_intelligence_rag.cli index-qdrant
+PYTHONPATH=src python3 -m market_intelligence_rag.cli search-qdrant --query "How is Microsoft describing AI demand?"
+```
 
-- `docs/project_plan.md`
+## Environment
+
+- `SEC_USER_AGENT`: required for polite SEC access
+- `OPENAI_API_KEY`: required for embedding and semantic search
+- `QDRANT_URL`: optional, defaults to `http://localhost:6333`
+- `QDRANT_COLLECTION`: optional, defaults to `market_intelligence_sec_chunks`
+
+## Current Status
+
+- working SEC manifest generation against live SEC submissions data
+- working raw download, normalization, section extraction, and chunk generation
+- Qdrant indexing and semantic search commands are implemented, but still need full end-to-end validation in this repo
+- grounded answer generation and portfolio polish are still ahead
 
 ## Notes
 
-This repo intentionally starts small. The goal is a clear, credible, explainable RAG implementation rather than a flashy demo.
+This repo is intentionally narrow. The goal is to demonstrate practical AI data engineering judgment, not a generic chatbot demo.

@@ -1,0 +1,34 @@
+{
+  "companies": [
+    {
+      "company": "Microsoft",
+      "ticker": "MSFT",
+      "cik": "0000789019"
+    },
+    {
+      "company": "NVIDIA",
+      "ticker": "NVDA",
+      "cik": "0001045810"
+    },
+    {
+      "company": "Amazon",
+      "ticker": "AMZN",
+      "cik": "0001018724"
+    }
+  ],
+  "forms": [
+    {
+      "form_type": "8-K",
+      "limit": 2,
+      "selected_sections": []
+    },
+    {
+      "form_type": "10-Q",
+      "limit": 2,
+      "selected_sections": [
+        "mda",
+        "risk_factors"
+      ]
+    }
+  ]
+}
