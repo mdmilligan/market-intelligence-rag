@@ -24,6 +24,7 @@ class FormSeed:
     form_type: str
     limit: int
     selected_sections: list[str] = field(default_factory=list)
+    selected_exhibits: list[str] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "FormSeed":
@@ -31,6 +32,7 @@ class FormSeed:
             form_type=data["form_type"],
             limit=int(data.get("limit", 1)),
             selected_sections=list(data.get("selected_sections", [])),
+            selected_exhibits=list(data.get("selected_exhibits", [])),
         )
 
 
@@ -55,6 +57,7 @@ class ManifestEntry:
     quarter: int | None = None
     year: int | None = None
     selected_sections: list[str] = field(default_factory=list)
+    selected_exhibits: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -75,6 +78,7 @@ class ManifestEntry:
             quarter=data.get("quarter"),
             year=data.get("year"),
             selected_sections=list(data.get("selected_sections", [])),
+            selected_exhibits=list(data.get("selected_exhibits", [])),
         )
 
 
@@ -83,6 +87,7 @@ class ProcessedSection:
     section_name: str
     text: str
     char_count: int
+    source_url: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -93,6 +98,7 @@ class ProcessedSection:
             section_name=data["section_name"],
             text=data["text"],
             char_count=int(data["char_count"]),
+            source_url=data.get("source_url"),
         )
 
 

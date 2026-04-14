@@ -31,6 +31,20 @@ def raw_document_path(settings: Settings, entry: ManifestEntry) -> Path:
     )
 
 
+def raw_exhibit_path(
+    settings: Settings, entry: ManifestEntry, exhibit_number: str, document_name: str
+) -> Path:
+    safe_exhibit = exhibit_number.lower().replace(".", "-")
+    original_name = Path(document_name).name
+    return (
+        settings.raw_dir
+        / "sec"
+        / entry.ticker.lower()
+        / entry.form_type.lower()
+        / f"{entry.accession_number}--{safe_exhibit}--{original_name}"
+    )
+
+
 def processed_document_path(settings: Settings, entry: ManifestEntry) -> Path:
     return (
         settings.processed_dir

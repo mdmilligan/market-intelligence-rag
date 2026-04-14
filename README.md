@@ -19,6 +19,7 @@ The scope is intentionally focused to highlight practical AI data engineering ju
 
 - builds a small SEC-first corpus for Magnificent 7 companies
 - extracts targeted quarterly earnings material from `8-K` and `10-Q` filings
+- pulls selected `8-K` exhibits such as `99.1` when they contain the real earnings narrative
 - normalizes filing text and preserves citation metadata
 - chunks documents into retrieval-ready records
 - supports semantic retrieval with metadata filters
@@ -31,6 +32,7 @@ Current scope:
 - source base: SEC materials first
 - starting companies: Microsoft, NVIDIA, Amazon
 - filing types: earnings-related `8-K` materials plus selected `10-Q` sections
+- selected `8-K` exhibit target: `99.1` when available
 - selected `10-Q` sections: `mda` and `risk_factors`
 - interface: CLI first, with a later path to FastAPI
 

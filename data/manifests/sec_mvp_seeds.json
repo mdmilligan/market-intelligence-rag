@@ -20,7 +20,10 @@
     {
       "form_type": "8-K",
       "limit": 2,
-      "selected_sections": []
+      "selected_sections": [],
+      "selected_exhibits": [
+        "99.1"
+      ]
     },
     {
       "form_type": "10-Q",

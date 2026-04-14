@@ -36,6 +36,22 @@ def test_extract_sections_skips_table_of_contents_match() -> None:
     assert notes == []
 
 
+def test_extract_sections_trims_mda_boilerplate() -> None:
+    text = (
+        "Part I Item 2. Management's Discussion and Analysis of Financial Condition and Results of Operations "
+        "Forward-Looking Statements This Quarterly Report includes forward-looking statements within the meaning of the Private Securities Litigation Reform Act of 1995. "
+        "Critical Accounting Estimates Some introductory boilerplate applies. "
+        "Overview Azure revenue grew due to AI and cloud demand while infrastructure investments increased. "
+        + ("Overview Azure revenue grew due to AI and cloud demand while infrastructure investments increased. " * 15)
+        + "Part I Item 3. Quantitative and Qualitative Disclosures About Market Risk"
+    )
+    sections, notes = extract_sections(text, ["mda"])
+    assert len(sections) == 1
+    assert sections[0].text.startswith("Overview Azure revenue grew")
+    assert any("Trimmed low-signal MDA boilerplate" in note for note in notes)
+
+
+
 def test_chunk_text_uses_overlap() -> None:
     text = " ".join(f"word{i}" for i in range(250))
     chunks = chunk_text(text, max_chars=120, overlap_chars=25)

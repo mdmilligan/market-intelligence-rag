@@ -74,7 +74,7 @@ def build_chunk_records(
                         quarter=entry.quarter,
                         year=entry.year,
                         accession_number=entry.accession_number,
-                        source_url=entry.primary_document_url,
+                        source_url=section.source_url or entry.primary_document_url,
                         section_name=section.section_name,
                     )
                 )

@@ -64,7 +64,9 @@ def normalize_source_text(source_text: str) -> str:
     return text.strip()
 
 
-def extract_sections(text: str, selected_sections: list[str]) -> tuple[list[ProcessedSection], list[str]]:
+def extract_sections(
+    text: str, selected_sections: list[str], source_url: str | None = None
+) -> tuple[list[ProcessedSection], list[str]]:
     sections: list[ProcessedSection] = []
     notes: list[str] = []
 
@@ -74,6 +76,7 @@ def extract_sections(text: str, selected_sections: list[str]) -> tuple[list[Proc
                 section_name="filing_document",
                 text=text,
                 char_count=len(text),
+                source_url=source_url,
             )
         )
         return sections, notes
@@ -106,7 +109,12 @@ def extract_sections(text: str, selected_sections: list[str]) -> tuple[list[Proc
             continue
 
         section_text = max(candidates, key=len)
-        if len(section_text) < 200:
+        section_text, trim_note = _trim_section_text(pattern.section_name, section_text)
+        if trim_note:
+            notes.append(trim_note)
+
+        min_length = 60 if pattern.section_name == "risk_factors" else 200
+        if len(section_text) < min_length:
             notes.append(f"Section too short after extraction: {section_key}")
             continue
 
@@ -115,6 +123,7 @@ def extract_sections(text: str, selected_sections: list[str]) -> tuple[list[Proc
                 section_name=pattern.section_name,
                 text=section_text,
                 char_count=len(section_text),
+                source_url=source_url,
             )
         )
 
@@ -127,3 +136,33 @@ def _all_matches(text: str, patterns: tuple[str, ...]) -> list[re.Match[str]]:
         matches.extend(re.finditer(pattern, text, re.IGNORECASE))
     matches.sort(key=lambda match: match.start())
     return matches
+
+
+def _trim_section_text(section_name: str, section_text: str) -> tuple[str, str | None]:
+    if section_name != "mda":
+        return section_text, None
+
+    lowered = section_text.lower()
+    boilerplate_markers = (
+        "forward-looking statements",
+        "private securities litigation reform act",
+        "critical accounting estimates",
+    )
+    if not any(marker in lowered[:4000] for marker in boilerplate_markers):
+        return section_text, None
+
+    heading_patterns = (
+        r"\boverview\b",
+        r"\bresults of operations\b",
+        r"\bliquidity and capital resources\b",
+        r"\bsegment results\b",
+    )
+    for pattern in heading_patterns:
+        for match in re.finditer(pattern, lowered, re.IGNORECASE):
+            if match.start() < 400:
+                continue
+            trimmed = section_text[match.start() :].strip()
+            if len(trimmed) >= 200 and len(trimmed) >= len(section_text) * 0.4:
+                return trimmed, f"Trimmed low-signal MDA boilerplate before {match.group(0)}"
+
+    return section_text, None

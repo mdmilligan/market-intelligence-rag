@@ -57,6 +57,10 @@ Start with the most reproducible public sources:
 - selected `10-Q` sections for quarterly context
 - `10-K` sections only when annual context is needed later
 
+Initial `8-K` exhibit target:
+
+- `99.1` when it contains the primary earnings-release or shareholder-letter narrative
+
 ### Initial Company Set
 
 - Microsoft
