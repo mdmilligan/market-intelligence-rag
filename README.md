@@ -124,17 +124,28 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-Set a SEC user agent before hitting the SEC endpoints:
+Local configuration is loaded automatically from `.env` via `python-dotenv`.
+
+Tracked template:
 
 ```bash
-export SEC_USER_AGENT="market-intelligence-rag your-email@example.com"
+.env.example
 ```
 
-Optional environment variables:
+Local file:
+
+```bash
+.env
+```
+
+Set a valid SEC user agent and, when needed, your OpenAI key in `.env` before running the pipeline.
+
+Main settings:
 
 - `OPENAI_API_KEY`: required for embedding and semantic search
 - `QDRANT_URL`: defaults to `http://localhost:6333`
 - `QDRANT_COLLECTION`: defaults to `market_intelligence_sec_chunks`
+- `EMBEDDING_MODEL`: defaults to `text-embedding-3-small`
 
 ## Running The Pipeline
 

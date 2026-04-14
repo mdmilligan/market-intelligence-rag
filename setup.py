@@ -11,6 +11,7 @@ setup(
     install_requires=[
         "beautifulsoup4>=4.12,<5",
         "openai>=1.30,<2",
+        "python-dotenv>=1.0,<2",
         "qdrant-client>=1.9,<2",
         "requests>=2.31,<3",
     ],

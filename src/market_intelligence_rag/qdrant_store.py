@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 from .embeddings import embed_texts
@@ -26,7 +27,7 @@ def index_chunks(chunks: list[ChunkRecord], settings: Settings) -> int:
     for chunk, vector in zip(chunks, vectors, strict=True):
         points.append(
             models.PointStruct(
-                id=chunk.chunk_id,
+                id=str(uuid.uuid5(uuid.NAMESPACE_URL, chunk.chunk_id)),
                 vector=vector,
                 payload=chunk.to_dict(),
             )
@@ -63,12 +64,13 @@ def search_chunks(
         filters.append(_match_condition("year", year))
 
     query_filter = models.Filter(must=filters) if filters else None
-    results = client.search(
+    response = client.query_points(
         collection_name=settings.qdrant_collection,
-        query_vector=query_vector,
+        query=query_vector,
         query_filter=query_filter,
         limit=top_k,
     )
+    results = response.points
     return [
         {"score": result.score, "payload": result.payload}
         for result in results
