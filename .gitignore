@@ -11,6 +11,8 @@ venv/
 data/raw/
 data/processed/
 data/chunks/
+data/manifests/*.jsonl
+data/evaluations/*.json
 *.log
 *.sqlite3
 .idea/

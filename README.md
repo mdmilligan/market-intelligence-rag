@@ -96,6 +96,7 @@ The benchmark question set for repeatable retrieval checks lives in `data/benchm
 - filing normalization and targeted `10-Q` section extraction
 - chunk generation for retrieval
 - Qdrant indexing and semantic search commands
+- benchmark retrieval evaluation with saved JSON artifact output
 - tests for normalization, section extraction, and chunk overlap
 
 Execution status and next steps are tracked in GitHub Issues and the GitHub Project.
@@ -103,10 +104,13 @@ Execution status and next steps are tracked in GitHub Issues and the GitHub Proj
 ## Repository Layout
 
 - `src/market_intelligence_rag/`: CLI, SEC ingestion, processing, chunking, and retrieval code
-- `data/manifests/`: seed config and generated SEC filing manifest
+- `data/manifests/`: tracked seed config plus local generated manifest artifacts
 - `data/benchmarks/`: benchmark questions for retrieval evaluation
+- `data/evaluations/`: tracked evaluation notes plus local generated evaluation artifacts
 - `docs/project_plan.md`: architecture and design reference
 - `tests/`: focused tests for text processing and chunking behavior
+
+Generated pipeline artifacts such as raw SEC downloads, processed documents, chunk files, manifest snapshots, and retrieval evaluation JSON outputs are kept local and ignored by git.
 
 ## Local Setup
 
@@ -178,6 +182,7 @@ Optional indexing and retrieval flow after configuring Qdrant and `OPENAI_API_KE
 ```bash
 market-rag index-qdrant
 market-rag search-qdrant --query "How is Microsoft describing AI demand?"
+market-rag evaluate-retrieval
 ```
 
 ## Tradeoffs And Limitations
@@ -186,6 +191,7 @@ market-rag search-qdrant --query "How is Microsoft describing AI demand?"
 - targeted section extraction improves signal, but some filings still require company-specific handling
 - the current system is retrieval-first; grounded answer generation is not complete yet
 - the initial corpus is intentionally narrow so the project stays explainable and easy to inspect
+- retrieval evaluation is still manual-first; the saved artifact supports review but does not yet score relevance automatically
 
 ## What This Demonstrates
 

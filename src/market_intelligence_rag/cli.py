@@ -3,6 +3,12 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from .benchmarks import (
+    build_result_snippet,
+    build_retrieval_evaluation,
+    load_benchmark_questions,
+    write_retrieval_evaluation,
+)
 from .chunking import build_chunk_records
 from .manifest import load_manifest_entries, load_manifest_seed_config, write_manifest_entries
 from .qdrant_store import index_chunks, search_chunks
@@ -84,6 +90,22 @@ def build_parser() -> argparse.ArgumentParser:
     search_qdrant.add_argument("--section-name")
     search_qdrant.add_argument("--year", type=int)
 
+    evaluate_retrieval = subparsers.add_parser(
+        "evaluate-retrieval",
+        help="Run benchmark retrieval queries and save an evaluation artifact.",
+    )
+    evaluate_retrieval.add_argument(
+        "--benchmarks",
+        type=Path,
+        default=Path("data/benchmarks/sec_retrieval_questions.json"),
+    )
+    evaluate_retrieval.add_argument(
+        "--output",
+        type=Path,
+        default=Path("data/evaluations/sec_retrieval_eval.json"),
+    )
+    evaluate_retrieval.add_argument("--top-k", type=int, default=3)
+
     return parser
 
 
@@ -147,8 +169,24 @@ def main() -> None:
             payload = result["payload"]
             print(
                 f"[{result['score']:.3f}] {payload['company']} {payload['form_type']} "
-                f"{payload['filing_date']} {payload['section_name']} {payload['source_url']}"
+                f"{payload['filing_date']} {payload['section_name']} {payload['chunk_id']}"
             )
+            print(f"  Source: {payload['source_url']}")
+            print(f"  Text:   {build_result_snippet(payload['text'])}")
+            print()
+        return
+
+    if args.command == "evaluate-retrieval":
+        questions = load_benchmark_questions(args.benchmarks)
+        evaluation = build_retrieval_evaluation(
+            questions=questions,
+            settings=settings,
+            top_k=args.top_k,
+        )
+        write_retrieval_evaluation(args.output, evaluation)
+        print(
+            f"Saved retrieval evaluation for {evaluation['question_count']} questions to {args.output}"
+        )
         return
 
     parser.error(f"Unknown command: {args.command}")

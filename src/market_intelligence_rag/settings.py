@@ -21,6 +21,7 @@ class Settings:
     processed_dir: Path
     chunks_dir: Path
     benchmarks_dir: Path
+    evaluations_dir: Path
     sec_user_agent: str
     openai_api_key: str | None
     qdrant_url: str
@@ -38,6 +39,7 @@ def get_settings() -> Settings:
         processed_dir=data_dir / "processed",
         chunks_dir=data_dir / "chunks",
         benchmarks_dir=data_dir / "benchmarks",
+        evaluations_dir=data_dir / "evaluations",
         sec_user_agent=os.getenv(
             "SEC_USER_AGENT",
             "market-intelligence-rag/0.1 (set SEC_USER_AGENT with contact info)",

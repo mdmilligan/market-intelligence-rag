@@ -173,11 +173,13 @@ The initial interface is a CLI. This keeps the early implementation focused on p
 Responsibilities:
 
 - orchestrate manifest generation, ingestion, processing, chunking, indexing, and search
+- support benchmark-style retrieval evaluation from the CLI
 - remain thin enough that the same core services can later be wrapped by FastAPI
 
 Primary files:
 
 - `src/market_intelligence_rag/cli.py`
+- `src/market_intelligence_rag/benchmarks.py`
 
 ## Metadata Model
 
@@ -213,6 +215,7 @@ The repository separates data by pipeline stage:
 - `data/chunks/`: chunk records ready for indexing
 - `data/manifests/`: manifest seeds and generated manifest files
 - `data/benchmarks/`: benchmark retrieval questions
+- `data/evaluations/`: saved retrieval evaluation artifacts
 
 This layout keeps the ingestion pipeline inspectable and makes reruns easier to reason about.
 

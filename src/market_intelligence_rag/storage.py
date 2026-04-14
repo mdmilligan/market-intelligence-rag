@@ -15,6 +15,7 @@ def ensure_runtime_dirs(settings: Settings) -> None:
         settings.processed_dir,
         settings.chunks_dir,
         settings.benchmarks_dir,
+        settings.evaluations_dir,
     ):
         path.mkdir(parents=True, exist_ok=True)
 
