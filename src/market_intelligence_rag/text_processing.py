@@ -64,6 +64,26 @@ def normalize_source_text(source_text: str) -> str:
     return text.strip()
 
 
+def clean_exhibit_text(
+    text: str, exhibit_number: str
+) -> tuple[str, str | None]:
+    normalized_exhibit = exhibit_number.upper().replace("EX-", "")
+    if normalized_exhibit != "99.1":
+        return text, None
+
+    cleaned = re.sub(
+        r"^(?:EX-99\.1\s+)*(?:\d+\s+)?\S+\.(?:htm|html|txt)\s+(?:EX-99\.1\s+)*(?:Document\s+)?(?:Exhibit\s+99\.1\s+)?",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    ).strip()
+    cleaned = re.sub(r"^(?:EX-99\.1\s+|Exhibit\s+99\.1\s+)+", "", cleaned, flags=re.IGNORECASE).strip()
+
+    if cleaned != text:
+        return cleaned, "Trimmed EX-99.1 preamble/header noise"
+    return text, None
+
+
 def extract_sections(
     text: str, selected_sections: list[str], source_url: str | None = None
 ) -> tuple[list[ProcessedSection], list[str]]:

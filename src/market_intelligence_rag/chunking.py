@@ -1,6 +1,37 @@
 from __future__ import annotations
 
+import re
+
 from .models import ChunkRecord, ProcessedDocument
+
+
+HEADING_PATTERNS = {
+    "mda": (
+        r"\bOVERVIEW\b",
+        r"\bIndustry Trends and Opportunities\b",
+        r"\bReportable Segments\b",
+        r"\bResults of Operations\b",
+        r"\bLiquidity and Capital Resources\b",
+        r"\bOther Planned Uses of Capital\b",
+        r"\bCritical Accounting Estimates\b",
+    ),
+    "risk_factors": (
+        r"\bBusiness and Industry Risks\b",
+        r"\bRisks Related to Our Business Model\b",
+        r"\bLegal and Regulatory Risks\b",
+        r"\bOur Expansion into New\b",
+    ),
+    "exhibit_99_1": (
+        r"\bFourth Quarter\s+20\d{2}\b",
+        r"\bFirst Quarter\s+20\d{2}\b",
+        r"\bSecond Quarter\s+20\d{2}\b",
+        r"\bThird Quarter\s+20\d{2}\b",
+        r"\bFull Year\s+20\d{2}\b",
+        r"\bFinancial Guidance\b",
+        r"\bConference Call Information\b",
+        r"\bForward-Looking Statements\b",
+    ),
+}
 
 
 def chunk_text(text: str, max_chars: int = 1200, overlap_chars: int = 200) -> list[str]:
@@ -54,28 +85,61 @@ def build_chunk_records(
     for document in processed_documents:
         entry = document.manifest_entry
         for section in document.sections:
-            for index, chunk_text_value in enumerate(
-                chunk_text(section.text, max_chars=max_chars, overlap_chars=overlap_chars),
-                start=1,
-            ):
-                chunk_id = (
-                    f"{entry.ticker.lower()}-"
-                    f"{entry.accession_number.replace('-', '')}-"
-                    f"{section.section_name}-{index:03d}"
-                )
-                records.append(
-                    ChunkRecord(
-                        chunk_id=chunk_id,
-                        text=chunk_text_value,
-                        company=entry.company,
-                        ticker=entry.ticker,
-                        form_type=entry.form_type,
-                        filing_date=entry.filing_date,
-                        quarter=entry.quarter,
-                        year=entry.year,
-                        accession_number=entry.accession_number,
-                        source_url=section.source_url or entry.primary_document_url,
-                        section_name=section.section_name,
+            chunk_index = 1
+            for block in split_text_for_chunking(section.text, section.section_name):
+                for chunk_text_value in chunk_text(
+                    block, max_chars=max_chars, overlap_chars=overlap_chars
+                ):
+                    chunk_id = (
+                        f"{entry.ticker.lower()}-"
+                        f"{entry.accession_number.replace('-', '')}-"
+                        f"{section.section_name}-{chunk_index:03d}"
                     )
-                )
+                    records.append(
+                        ChunkRecord(
+                            chunk_id=chunk_id,
+                            text=chunk_text_value,
+                            company=entry.company,
+                            ticker=entry.ticker,
+                            form_type=entry.form_type,
+                            filing_date=entry.filing_date,
+                            quarter=entry.quarter,
+                            year=entry.year,
+                            accession_number=entry.accession_number,
+                            source_url=section.source_url or entry.primary_document_url,
+                            section_name=section.section_name,
+                        )
+                    )
+                    chunk_index += 1
     return records
+
+
+def split_text_for_chunking(text: str, section_name: str) -> list[str]:
+    patterns = HEADING_PATTERNS.get(section_name)
+    if not patterns:
+        return [text]
+
+    matches: list[int] = []
+    for pattern in patterns:
+        for match in re.finditer(pattern, text):
+            if match.start() < 150:
+                continue
+            matches.append(match.start())
+
+    if not matches:
+        return [text]
+
+    split_points = sorted(set(matches))
+    blocks: list[str] = []
+    start = 0
+    for split_point in split_points:
+        candidate = text[start:split_point].strip()
+        if len(candidate) >= 200:
+            blocks.append(candidate)
+        start = split_point
+
+    tail = text[start:].strip()
+    if tail:
+        blocks.append(tail)
+
+    return blocks or [text]

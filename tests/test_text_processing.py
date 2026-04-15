@@ -1,5 +1,5 @@
-from market_intelligence_rag.chunking import chunk_text
-from market_intelligence_rag.text_processing import extract_sections, normalize_source_text
+from market_intelligence_rag.chunking import chunk_text, split_text_for_chunking
+from market_intelligence_rag.text_processing import clean_exhibit_text, extract_sections, normalize_source_text
 
 
 def test_normalize_source_text_strips_html() -> None:
@@ -57,3 +57,26 @@ def test_chunk_text_uses_overlap() -> None:
     chunks = chunk_text(text, max_chars=120, overlap_chars=25)
     assert len(chunks) > 1
     assert chunks[0].split()[-1] in chunks[1].split()
+
+
+def test_clean_exhibit_text_removes_preamble() -> None:
+    text = (
+        "EX-99.1 2 amzn-20251231xex991.htm EX-99.1 Document Exhibit 99.1 "
+        "AMAZON.COM ANNOUNCES FOURTH QUARTER RESULTS Net sales increased."
+    )
+    cleaned, note = clean_exhibit_text(text, "99.1")
+    assert cleaned.startswith("AMAZON.COM ANNOUNCES FOURTH QUARTER RESULTS")
+    assert note == "Trimmed EX-99.1 preamble/header noise"
+
+
+def test_split_text_for_chunking_respects_headings() -> None:
+    text = (
+        "Overview "
+        + ("overview words " * 40)
+        + "Liquidity and Capital Resources "
+        + ("liquidity words " * 40)
+    )
+    blocks = split_text_for_chunking(text, "mda")
+    assert len(blocks) == 2
+    assert blocks[0].startswith("Overview")
+    assert blocks[1].startswith("Liquidity and Capital Resources")

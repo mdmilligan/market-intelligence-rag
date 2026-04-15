@@ -15,7 +15,7 @@ from .storage import (
     raw_exhibit_path,
     write_json,
 )
-from .text_processing import extract_sections, normalize_source_text
+from .text_processing import clean_exhibit_text, extract_sections, normalize_source_text
 
 
 SEC_ARCHIVES = "https://www.sec.gov/Archives/edgar/data"
@@ -127,7 +127,8 @@ def process_manifest_documents(
 
         sections: list[ProcessedSection] = []
         notes: list[str] = []
-        exhibit_sections = _load_selected_exhibit_sections(entry, settings)
+        exhibit_sections, exhibit_notes = _load_selected_exhibit_sections(entry, settings)
+        notes.extend(exhibit_notes)
         if exhibit_sections:
             sections.extend(exhibit_sections)
             notes.append(f"Loaded {len(exhibit_sections)} selected exhibits")
@@ -227,8 +228,9 @@ def _extract_selected_exhibit_links(
 
 def _load_selected_exhibit_sections(
     entry: ManifestEntry, settings: Settings
-) -> list[ProcessedSection]:
+) -> tuple[list[ProcessedSection], list[str]]:
     sections: list[ProcessedSection] = []
+    notes: list[str] = []
     for exhibit_number in entry.selected_exhibits:
         exhibit_glob = (
             f"{entry.accession_number}--{exhibit_number.lower().replace('.', '-')}--*"
@@ -239,6 +241,9 @@ def _load_selected_exhibit_sections(
             continue
         exhibit_file = matches[0]
         exhibit_text = normalize_source_text(exhibit_file.read_text(encoding="utf-8"))
+        exhibit_text, cleanup_note = clean_exhibit_text(exhibit_text, exhibit_number)
+        if cleanup_note:
+            notes.append(f"{exhibit_number}: {cleanup_note}")
         document_name = exhibit_file.name.split("--", 2)[-1]
         sections.append(
             ProcessedSection(
@@ -248,7 +253,7 @@ def _load_selected_exhibit_sections(
                 source_url=_build_exhibit_source_url(entry, document_name),
             )
         )
-    return sections
+    return sections, notes
 
 
 def _build_exhibit_source_url(entry: ManifestEntry, document_name: str) -> str:
