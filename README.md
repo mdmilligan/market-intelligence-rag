@@ -49,15 +49,17 @@ Core flow:
 `ingest -> clean/normalize -> extract sections -> chunk -> embed -> store vectors + metadata -> retrieve -> filter -> cite`
 
 ```mermaid
-flowchart LR
-    A[Seed Config\ncompanies + forms + sections] --> B[Manifest Builder\nSEC submissions + filing indexes]
-    B --> C[Raw SEC Documents\n10-Q filings + 8-K wrapper + 99.1 exhibits]
-    C --> D[Normalization + Extraction\nMDA, risk factors, exhibit cleanup]
-    D --> E[Heading-Aware Chunking\nchunk text + metadata]
-    E --> F[OpenAI Embeddings\ntext-embedding-3-small]
-    F --> G[Qdrant\nvectors + metadata filters]
-    G --> H[CLI Search + Evaluation\nquery, filter, inspect, cite]
+%%{init: {'themeVariables': {'fontSize': '12px'}, 'flowchart': {'nodeSpacing': 20, 'rankSpacing': 30}}}%%
+flowchart TD
+    A[Seed Config] --> B[Manifest Builder]
+    B --> C[Raw SEC Docs]
+    C --> D[Normalization]
+    D --> E[Heading Chunking]
+    E --> F[Embeddings]
+    F --> G[Qdrant]
+    G --> H[CLI Search]
 ```
+
 
 Current implementation is centered around a manifest-driven SEC workflow:
 
