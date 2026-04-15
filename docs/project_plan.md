@@ -41,7 +41,19 @@ The system is designed to answer strategic questions about how major public comp
 
 Core architecture:
 
-`ingest -> clean/normalize -> extract sections -> chunk -> embed -> store vectors + metadata -> retrieve -> filter -> cite`
+`ingest -> clean/normalize -> extract sections -> chunk -> embed -> store vectors + metadata -> retrieve -> filter -> prompt -> generate -> cite`
+
+```mermaid
+flowchart LR
+    A[Seed Config] --> B[Manifest Builder]
+    B --> C[Raw SEC Filings + Selected 99.1 Exhibits]
+    C --> D[Normalization + Section Extraction]
+    D --> E[Heading-Aware Chunking + Metadata]
+    E --> F[Embeddings]
+    F --> G[Qdrant]
+    G --> H[CLI Search + Retrieval Evaluation]
+    H --> I[Prompt Assembly + Answer Generation]
+```
 
 Current repo flow:
 
@@ -135,6 +147,7 @@ Responsibilities:
 
 - strip markup and normalize whitespace
 - identify targeted `10-Q` section boundaries
+- clean selected `8-K` exhibit text before chunking
 - record processing notes when extraction is weak or missing
 
 Primary files:
@@ -148,6 +161,7 @@ The chunking layer converts processed sections into retrieval-ready text segment
 Responsibilities:
 
 - create overlapping chunks
+- split large sections on meaningful headings where possible
 - preserve source metadata on every chunk
 - generate stable chunk identifiers
 
@@ -169,6 +183,20 @@ Primary files:
 
 - `src/market_intelligence_rag/embeddings.py`
 - `src/market_intelligence_rag/qdrant_store.py`
+
+### Generation Layer
+
+The generation layer turns retrieved SEC chunks into a concise grounded answer.
+
+Responsibilities:
+
+- assemble numbered citation context from retrieval results
+- generate concise answers with inline citations
+- avoid answering confidently when retrieval is weak
+
+Primary files:
+
+- `src/market_intelligence_rag/generation.py`
 
 ### Interface Layer
 

@@ -27,6 +27,7 @@ class Settings:
     qdrant_url: str
     qdrant_collection: str
     embedding_model: str
+    chat_model: str
 
 
 def get_settings() -> Settings:
@@ -50,4 +51,5 @@ def get_settings() -> Settings:
             "QDRANT_COLLECTION", "market_intelligence_sec_chunks"
         ),
         embedding_model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-small"),
+        chat_model=os.getenv("CHAT_MODEL", "gpt-4o-mini"),
     )

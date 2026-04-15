@@ -23,7 +23,7 @@ The scope is intentionally focused to highlight practical AI data engineering ju
 - normalizes filing text and preserves citation metadata
 - chunks documents into retrieval-ready records
 - supports semantic retrieval with metadata filters
-- supports a retrieval-first pipeline with a clear path to grounded answer generation
+- generates grounded answers from retrieved SEC evidence with inline citations
 
 ## Current Scope
 
@@ -47,6 +47,17 @@ Why this scope:
 Core flow:
 
 `ingest -> clean/normalize -> extract sections -> chunk -> embed -> store vectors + metadata -> retrieve -> filter -> cite`
+
+```mermaid
+flowchart LR
+    A[Seed Config\ncompanies + forms + sections] --> B[Manifest Builder\nSEC submissions + filing indexes]
+    B --> C[Raw SEC Documents\n10-Q filings + 8-K wrapper + 99.1 exhibits]
+    C --> D[Normalization + Extraction\nMDA, risk factors, exhibit cleanup]
+    D --> E[Heading-Aware Chunking\nchunk text + metadata]
+    E --> F[OpenAI Embeddings\ntext-embedding-3-small]
+    F --> G[Qdrant\nvectors + metadata filters]
+    G --> H[CLI Search + Evaluation\nquery, filter, inspect, cite]
+```
 
 Current implementation is centered around a manifest-driven SEC workflow:
 
@@ -90,6 +101,46 @@ This metadata-first design is a core part of the project. The point is not only 
 
 The benchmark question set for repeatable retrieval checks lives in `data/benchmarks/sec_retrieval_questions.json`.
 
+## Sample Retrieval Output
+
+Example query:
+
+```bash
+market-rag search-qdrant --query "How has Microsoft framed AI monetization in recent quarterly materials?" --company Microsoft --top-k 3
+```
+
+Example result shape:
+
+```text
+[0.694] Microsoft 8-K 2026-01-28 exhibit_99_1 msft-000119312526027198-exhibit_99_1-001
+  Source: https://www.sec.gov/Archives/edgar/data/789019/000119312526027198/msft-ex99_1.htm
+  Text:   Microsoft Cloud and AI Strength Drives Second Quarter Results ...
+
+[0.676] Microsoft 8-K 2025-10-29 exhibit_99_1 msft-000119312525256310-exhibit_99_1-001
+  Source: https://www.sec.gov/Archives/edgar/data/789019/000119312525256310/msft-ex99_1.htm
+  Text:   Microsoft Cloud and AI Strength Drives First Quarter Results ...
+
+[0.659] Microsoft 8-K 2026-01-28 exhibit_99_1 msft-000119312526027198-exhibit_99_1-002
+  Source: https://www.sec.gov/Archives/edgar/data/789019/000119312526027198/msft-ex99_1.htm
+  Text:   "We are pushing the frontier across our entire AI stack to drive new value ..."
+```
+
+Another example:
+
+```bash
+market-rag search-qdrant --query "How are Amazon and Microsoft discussing capital expenditure or infrastructure expansion?" --top-k 5
+```
+
+Representative hits from the current corpus:
+
+```text
+[0.610] Microsoft 10-Q 2025-10-29 mda msft-000119312525256321-mda-036
+  Text:   Other Planned Uses of Capital ... Additions to property and equipment will continue, including new facilities, datacenters ...
+
+[0.565] Amazon 8-K 2026-02-05 exhibit_99_1 amzn-000101872426000002-exhibit_99_1-005
+  Text:   ... we expect to invest about $200 billion in capital expenditures across Amazon in 2026 ...
+```
+
 ## Current Capabilities
 
 - SEC seed config and benchmark scaffolding
@@ -98,6 +149,7 @@ The benchmark question set for repeatable retrieval checks lives in `data/benchm
 - filing normalization and targeted `10-Q` section extraction
 - chunk generation for retrieval
 - Qdrant indexing and semantic search commands
+- grounded answer generation from retrieved SEC chunks
 - benchmark retrieval evaluation with saved JSON artifact output
 - tests for normalization, section extraction, and chunk overlap
 
@@ -152,6 +204,7 @@ Main settings:
 - `QDRANT_URL`: defaults to `http://localhost:6333`
 - `QDRANT_COLLECTION`: defaults to `market_intelligence_sec_chunks`
 - `EMBEDDING_MODEL`: defaults to `text-embedding-3-small`
+- `CHAT_MODEL`: defaults to `gpt-4o-mini`
 
 ## Running The Pipeline
 
@@ -184,6 +237,7 @@ Optional indexing and retrieval flow after configuring Qdrant and `OPENAI_API_KE
 ```bash
 market-rag index-qdrant
 market-rag search-qdrant --query "How is Microsoft describing AI demand?"
+market-rag answer-sec --query "How has Microsoft framed AI monetization in recent quarterly materials?" --company Microsoft
 market-rag evaluate-retrieval
 ```
 
@@ -191,9 +245,16 @@ market-rag evaluate-retrieval
 
 - SEC-first sourcing is more reproducible than transcript-first sourcing, but less rich in spoken management commentary
 - targeted section extraction improves signal, but some filings still require company-specific handling
-- the current system is retrieval-first; grounded answer generation is not complete yet
+- grounded answer generation is a first pass and remains tightly bounded by retrieval quality
 - the initial corpus is intentionally narrow so the project stays explainable and easy to inspect
 - retrieval evaluation is still manual-first; the saved artifact supports review but does not yet score relevance automatically
+
+## Current Retrieval Findings
+
+- targeted company and section queries perform better than broad comparison queries
+- adding `8-K` `99.1` exhibits materially improved earnings-related retrieval quality
+- trimming early `mda` boilerplate and using heading-aware chunking improved result quality for capital-investment queries
+- temporal change questions still need a more explicit comparison or reranking strategy
 
 ## What This Demonstrates
 

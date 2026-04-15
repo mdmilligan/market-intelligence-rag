@@ -10,6 +10,7 @@ from .benchmarks import (
     write_retrieval_evaluation,
 )
 from .chunking import build_chunk_records
+from .generation import answer_question
 from .manifest import load_manifest_entries, load_manifest_seed_config, write_manifest_entries
 from .qdrant_store import index_chunks, search_chunks
 from .sec import build_recent_manifest, download_manifest_documents, process_manifest_documents
@@ -89,6 +90,16 @@ def build_parser() -> argparse.ArgumentParser:
     search_qdrant.add_argument("--form-type")
     search_qdrant.add_argument("--section-name")
     search_qdrant.add_argument("--year", type=int)
+
+    answer_sec = subparsers.add_parser(
+        "answer-sec", help="Generate a grounded answer from retrieved SEC chunks."
+    )
+    answer_sec.add_argument("--query", required=True)
+    answer_sec.add_argument("--top-k", type=int, default=5)
+    answer_sec.add_argument("--company")
+    answer_sec.add_argument("--form-type")
+    answer_sec.add_argument("--section-name")
+    answer_sec.add_argument("--year", type=int)
 
     evaluate_retrieval = subparsers.add_parser(
         "evaluate-retrieval",
@@ -187,6 +198,31 @@ def main() -> None:
         print(
             f"Saved retrieval evaluation for {evaluation['question_count']} questions to {args.output}"
         )
+        return
+
+    if args.command == "answer-sec":
+        result = answer_question(
+            query=args.query,
+            settings=settings,
+            top_k=args.top_k,
+            company=args.company,
+            form_type=args.form_type,
+            section_name=args.section_name,
+            year=args.year,
+        )
+        print("Answer:")
+        print(result["answer"])
+        print()
+        print("Citations:")
+        for citation in result["citations"]:
+            print(
+                f"[{citation['index']}] {citation['company']} {citation['form_type']} "
+                f"{citation['filing_date']} {citation['section_name']} {citation['chunk_id']}"
+            )
+            print(f"  Score:  {citation['score']:.4f}")
+            print(f"  Source: {citation['source_url']}")
+            print(f"  Text:   {build_result_snippet(citation['text'])}")
+            print()
         return
 
     parser.error(f"Unknown command: {args.command}")
