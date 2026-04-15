@@ -268,5 +268,3 @@ This project demonstrates the parts of RAG work that matter in real systems:
 - retrieval quality over unstructured text
 - citation-ready outputs
 - honest scope control
-
-The project is intentionally optimized for clarity, credibility, and maintainability over hype.
