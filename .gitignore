@@ -12,6 +12,7 @@ data/raw/
 data/processed/
 data/chunks/
 data/manifests/*.jsonl
+!data/manifests/sec_mvp_manifest.jsonl
 data/evaluations/*.json
 *.log
 *.sqlite3

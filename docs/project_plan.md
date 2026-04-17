@@ -8,7 +8,7 @@ Execution status and task tracking live in the GitHub Project and GitHub Issues,
 
 ## System Goal
 
-Build a small, credible RAG system over public market intelligence materials that demonstrates practical AI data engineering judgment.
+Build a small, credible RAG proof of concept over public market intelligence materials that demonstrates practical AI data engineering judgment.
 
 The system is designed to answer strategic questions about how major public companies discuss:
 
@@ -22,11 +22,11 @@ The system is designed to answer strategic questions about how major public comp
 
 ### In Scope
 
-- Magnificent 7 public company materials
-- SEC-first corpus for the initial implementation
+- SEC-first corpus for an initial three-company proof of concept
 - semantic retrieval over unstructured filings
 - metadata filtering by company, filing period, form type, and section
 - citation-ready retrieval outputs
+- grounded answers from retrieved SEC evidence with citations
 - CLI-first workflow, with a later path to FastAPI
 
 ### Out Of Scope
@@ -39,9 +39,9 @@ The system is designed to answer strategic questions about how major public comp
 
 ## High-Level Flow
 
-Core architecture:
+Implemented flow:
 
-`ingest -> clean/normalize -> extract sections -> chunk -> embed -> store vectors + metadata -> retrieve -> filter -> prompt -> generate -> cite`
+`build manifest -> ingest -> clean/normalize -> extract sections -> chunk -> embed -> store vectors + metadata -> retrieve with metadata filters -> cite -> answer/evaluate`
 
 ```mermaid
 flowchart LR
@@ -55,10 +55,6 @@ flowchart LR
     H --> I[Prompt Assembly + Answer Generation]
 ```
 
-Current repo flow:
-
-`build manifest -> download SEC documents -> normalize -> extract targeted sections -> chunk -> index -> search`
-
 ## Source Strategy
 
 ### Initial Corpus
@@ -69,15 +65,30 @@ Start with the most reproducible public sources:
 - selected `10-Q` sections for quarterly context
 - `10-K` sections only when annual context is needed later
 
+Why these sources:
+
+- they are official and reproducible
+- they preserve filing metadata and source URLs cleanly
+- they are easy to explain in an interview or portfolio review
+- they provide a practical mix of concise earnings narrative and more durable quarterly disclosure
+
 Initial `8-K` exhibit target:
 
 - `99.1` when it contains the primary earnings-release or shareholder-letter narrative
+
+Why `8-K` and `99.1`:
+
+- `8-K` is the current report companies often use to furnish quarterly earnings materials
+- `99.1` is commonly the attached earnings release, which usually contains the most direct management language about the quarter
+- this source tends to produce concise, high-signal chunks for strategy, demand, investment, and outlook questions
 
 ### Initial Company Set
 
 - Microsoft
 - NVIDIA
 - Amazon
+
+This initial company set is a proof-of-concept scope choice, not an architectural limit. The manifest-driven workflow can be extended to the remaining Magnificent 7 or another issuer list by updating the seed configuration and rerunning the pipeline.
 
 ### Initial Section Strategy
 
@@ -87,6 +98,12 @@ The first targeted `10-Q` sections are:
 - `risk_factors`
 
 This keeps the initial extraction path narrow while still covering strategy, operating performance, and disclosed risk.
+
+Why `mda` and `risk_factors`:
+
+- `mda` usually contains management discussion of performance drivers, operating trends, margin movement, and capital allocation
+- `risk_factors` captures disclosed constraints, uncertainty, and updates to the company's risk framing
+- together, they add more durable quarterly context than an earnings release alone while avoiding the noise of full-filing ingestion
 
 ### Expansion Path
 
@@ -102,7 +119,7 @@ After the SEC-first base corpus is stable, the likely next sources are:
 - Use public, reproducible sources first
 - Treat metadata as a first-class part of the retrieval design
 - Keep the MVP small enough to explain quickly in an interview
-- Prefer a strong retrieval pipeline before adding answer generation
+- Keep the proof of concept easy to inspect and extend
 
 ## Component Architecture
 
@@ -245,9 +262,9 @@ The repository separates data by pipeline stage:
 - `data/raw/`: raw SEC documents
 - `data/processed/`: normalized documents and extracted sections
 - `data/chunks/`: chunk records ready for indexing
-- `data/manifests/`: manifest seeds and generated manifest files
+- `data/manifests/`: manifest seeds plus a tracked reference manifest snapshot
 - `data/benchmarks/`: benchmark retrieval questions
-- `data/evaluations/`: saved retrieval evaluation artifacts
+- `data/evaluations/`: tracked retrieval notes; generated evaluation JSON is local-only
 
 This layout keeps the ingestion pipeline inspectable and makes reruns easier to reason about.
 
@@ -320,22 +337,21 @@ Chosen because retrieval quality and metadata fidelity are more important than e
 
 Trade-off:
 
-- the system is not yet a full answering experience
+- the generated answer quality remains bounded by the strength of the retrieved evidence
 
 ## Risks And Limitations
 
 - SEC filing extraction may still require company-specific handling for some layouts or exhibits
 - selected `10-Q` section boundaries may need refinement as coverage expands
 - chunking strategy may need iteration to improve retrieval quality
-- retrieval quality should be validated carefully before adding grounded answer generation
-- the initial corpus is intentionally narrow and does not yet cover all Magnificent 7 companies or all public source types
+- broad comparison and temporal questions are still weaker than targeted single-company queries
+- the initial corpus is intentionally narrow and does not yet cover the full Magnificent 7 or additional public source types
 
 ## Future Directions
 
 - add more companies from the Magnificent 7
 - add additional `10-Q` or `10-K` sections where they improve retrieval value
 - incorporate IR materials such as shareholder letters and press releases
-- validate full Qdrant indexing and filtered retrieval workflow end-to-end
-- add grounded answer generation with citations
+- strengthen benchmark coverage as the corpus expands
 - add hybrid search or reranking if retrieval quality warrants it
 - expose the same core services through FastAPI

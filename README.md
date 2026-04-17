@@ -1,6 +1,6 @@
 # Market Intelligence RAG
 
-A source-grounded RAG system over SEC earnings materials for analyzing how major public companies discuss strategy, risk, and investment across quarters.
+A source-grounded RAG proof of concept over SEC earnings materials for analyzing how major public companies discuss strategy, risk, and investment across quarters.
 
 ## Why This Project Exists
 
@@ -17,7 +17,7 @@ The scope is intentionally focused to highlight practical AI data engineering ju
 
 ## What The System Does
 
-- builds a small SEC-first corpus for Magnificent 7 companies
+- builds a small SEC-first proof-of-concept corpus for an initial set of companies
 - extracts targeted quarterly earnings material from `8-K` and `10-Q` filings
 - pulls selected `8-K` exhibits such as `99.1` when they contain the real earnings narrative
 - normalizes filing text and preserves citation metadata
@@ -30,7 +30,7 @@ The scope is intentionally focused to highlight practical AI data engineering ju
 Current scope:
 
 - source base: SEC materials first
-- starting companies: Microsoft, NVIDIA, Amazon
+- proof-of-concept companies: Microsoft, NVIDIA, Amazon
 - filing types: earnings-related `8-K` materials plus selected `10-Q` sections
 - selected `8-K` exhibit target: `99.1` when available
 - selected `10-Q` sections: `mda` and `risk_factors`
@@ -42,11 +42,31 @@ Why this scope:
 - targeted `10-Q` extraction gives better signal than full-filing ingestion
 - CLI keeps the first version focused on ingestion, metadata, retrieval, and citations
 
+## Why These SEC Sources
+
+- `8-K`: a current report used here to capture earnings-release events and attached earnings materials
+- `99.1`: an exhibit that often contains the actual earnings-release narrative, which is usually more retrieval-friendly than the filing shell itself
+- `10-Q`: the quarterly report, used here for more durable operating and risk context than a short earnings release can provide
+- `mda`: Management's Discussion and Analysis, which usually contains management framing on growth drivers, operating trends, margins, and capital investment
+- `risk_factors`: the risk disclosure section, which is useful for questions about constraints, uncertainty, and changes in risk framing over time
+
+Why these were chosen:
+
+- `8-K` plus `99.1` gives concise, high-signal earnings language that often reads closer to how a company wants to frame the quarter
+- `10-Q` `mda` adds broader strategic and operating context that is often missing from short-form earnings materials
+- `10-Q` `risk_factors` adds downside and disclosure context, which helps the corpus support more than just growth-oriented questions
+- together, these sources give a credible initial retrieval corpus without the noise of ingesting every section of every filing
+
+Expansion path:
+
+- the manifest-driven design makes it straightforward to swap in other issuers
+- the same workflow can be extended to the remaining Magnificent 7 or another selected company set without changing the core architecture
+
 ## Architecture
 
-Core flow:
+Implemented flow:
 
-`ingest -> clean/normalize -> extract sections -> chunk -> embed -> store vectors + metadata -> retrieve -> filter -> cite`
+`build manifest -> ingest -> clean/normalize -> extract sections -> chunk -> embed -> store vectors + metadata -> retrieve with metadata filters -> cite -> answer/evaluate`
 
 ```mermaid
 %%{init: {'themeVariables': {'fontSize': '12px'}, 'flowchart': {'nodeSpacing': 20, 'rankSpacing': 30}}}%%
@@ -57,7 +77,8 @@ flowchart TD
     D --> E[Heading Chunking]
     E --> F[Embeddings]
     F --> G[Qdrant]
-    G --> H[CLI Search]
+    G --> H[CLI Search + Retrieval Evaluation]
+    H --> I[Prompt Assembly + Answer Generation]
 ```
 
 
@@ -68,7 +89,9 @@ Current implementation is centered around a manifest-driven SEC workflow:
 3. normalize filing text and extract targeted sections
 4. chunk processed text into citation-ready records
 5. optionally embed and index chunks into Qdrant
-6. query with metadata filters such as company, form type, section, and year
+6. retrieve citation-ready chunks with metadata filters such as company, form type, section, and year
+7. optionally generate a grounded answer from retrieved evidence
+8. optionally run benchmark retrieval evaluation and review the saved local artifact
 
 ## Data And Metadata Design
 
@@ -146,13 +169,13 @@ Representative hits from the current corpus:
 ## Current Capabilities
 
 - SEC seed config and benchmark scaffolding
-- live SEC manifest generation for the initial company set
+- live SEC manifest generation for the initial proof-of-concept company set
 - raw document download from SEC
 - filing normalization and targeted `10-Q` section extraction
 - chunk generation for retrieval
 - Qdrant indexing and semantic search commands
 - grounded answer generation from retrieved SEC chunks
-- benchmark retrieval evaluation with saved JSON artifact output
+- benchmark retrieval evaluation with saved local JSON artifact output
 - tests for normalization, section extraction, and chunk overlap
 
 Execution status and next steps are tracked in GitHub Issues and the GitHub Project.
@@ -160,13 +183,13 @@ Execution status and next steps are tracked in GitHub Issues and the GitHub Proj
 ## Repository Layout
 
 - `src/market_intelligence_rag/`: CLI, SEC ingestion, processing, chunking, and retrieval code
-- `data/manifests/`: tracked seed config plus local generated manifest artifacts
+- `data/manifests/`: tracked seed config plus one tracked reference manifest snapshot
 - `data/benchmarks/`: benchmark questions for retrieval evaluation
-- `data/evaluations/`: tracked evaluation notes plus local generated evaluation artifacts
+- `data/evaluations/`: tracked evaluation notes
 - `docs/project_plan.md`: architecture and design reference
 - `tests/`: focused tests for text processing and chunking behavior
 
-Generated pipeline artifacts such as raw SEC downloads, processed documents, chunk files, manifest snapshots, and retrieval evaluation JSON outputs are kept local and ignored by git.
+Generated pipeline artifacts such as raw SEC downloads, processed documents, chunk files, and retrieval evaluation JSON outputs are kept local and ignored by git. The checked-in manifest snapshot is an intentional reference artifact so reviewers can inspect the initial filing scope without rerunning the pipeline.
 
 ## Local Setup
 
@@ -249,7 +272,7 @@ market-rag evaluate-retrieval
 - targeted section extraction improves signal, but some filings still require company-specific handling
 - grounded answer generation is a first pass and remains tightly bounded by retrieval quality
 - the initial corpus is intentionally narrow so the project stays explainable and easy to inspect
-- retrieval evaluation is still manual-first; the saved artifact supports review but does not yet score relevance automatically
+- retrieval evaluation is still manual-first; the local JSON artifact and tracked notes support review but do not yet score relevance automatically
 
 ## Current Retrieval Findings
 
@@ -268,3 +291,7 @@ This project demonstrates the parts of RAG work that matter in real systems:
 - retrieval quality over unstructured text
 - citation-ready outputs
 - honest scope control
+
+The project is intentionally optimized for clarity, credibility, and maintainability over hype.
+
+The current repository is intentionally scoped as a working proof of concept over an initial three-company SEC corpus. If broader coverage is needed, the manifest seed configuration can be extended to the remaining Magnificent 7 or another selected company set and the same pipeline can be rerun.
