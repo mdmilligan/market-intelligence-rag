@@ -69,7 +69,6 @@ Implemented flow:
 `build manifest -> ingest -> clean/normalize -> extract sections -> chunk -> embed -> store vectors + metadata -> retrieve with metadata filters -> cite -> answer/evaluate`
 
 ```mermaid
-%%{init: {'themeVariables': {'fontSize': '12px'}, 'flowchart': {'nodeSpacing': 20, 'rankSpacing': 30}}}%%
 flowchart TD
     A[Seed Config] --> B[Manifest Builder]
     B --> C[Raw SEC Docs]
